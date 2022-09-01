@@ -26,9 +26,35 @@ local is_windows = function()
     return vim.loop.os_uname().sysname:find("Windows", 1, true) and true
 end
 
+local get_git_root = function ()
+  local gitroot = io.popen("git rev-parse --show-toplevel 2> /dev/null"):read("*l")
+  if gitroot ~= '' then
+    return gitroot
+  end
+  return nil
+end
+
+local get_pwd = function ()
+  return io.popen("pwd"):read("*l")
+end
+
+local get_venv_path = function()
+  local venv = os.getenv('VIRTUAL_ENV') or os.getenv('CONDA_PREFIX')
+  if venv ~= nil then
+    return venv
+  end
+  local root = get_git_root() or get_pwd()
+  if os.execute('[ -d .venv ]') == 0 then
+    return root .. '/.venv'
+  end
+  if os.execute('[ -d venv ]') == 0 then
+    return root .. '/venv'
+  end
+  return nil
+end
 
 local get_python_path = function()
-  local venv_path = os.getenv('VIRTUAL_ENV') or os.getenv('CONDA_PREFIX')
+  local venv_path = get_venv_path()
   if venv_path then
     if is_windows() then
         return venv_path .. '\\Scripts\\python.exe'
